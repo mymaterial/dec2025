@@ -1,0 +1,81 @@
+Connection establishment
+-------------------------
+
+/usr/pgsql-16/bin/postgres -D /u01/pgsql/16 -> postmaster
+
+1) connection establishment
+2) take care of other background process
+3) Instance recovery (recovery process)
+
+connection string:
+username, databasename, password,ip address, host
+
+log_connections = on
+log_disconnections = on
+log_duration = on
+
+-> Each connection will create a new process called user backend process
+-> 100 connections -> 100 processes in your system.
+
+-> If you kill session with "kill -9" -> it will restart your database.
+
+#idle_in_transaction_session_timeout = 0        # in milliseconds, 0 is disabled
+#idle_session_timeout = 0          		        # in milliseconds, 0 is disabled
+
+
+postgres=# select *, pg_sleep(1000) from emp;
+
+postgres=# select pg_cancel_backend('7918');
+ pg_cancel_backend
+-------------------
+ t
+(1 row)
+
+2024-04-18 10:31:26.295 IST [7918] ERROR:  canceling statement due to user request
+2024-04-18 10:31:26.295 IST [7918] STATEMENT:  select *, pg_sleep(1000) from emp;
+
+
+postgres=# select *, pg_sleep(1000) from emp;
+
+postgres=# select pg_terminate_backend('7918');
+ pg_terminate_backend
+----------------------
+ t
+(1 row)
+
+FATAL:  terminating connection due to administrator command
+
+FATAL:  terminating connection due to administrator command
+server closed the connection unexpectedly
+        This probably means the server terminated abnormally
+        before or while processing the request.
+The connection to the server was lost. Attempting reset: Succeeded.
+postgres=#
+
+
+
+View connection information??
+
+log_connections = on
+log_disconnections = on
+log_duration = on
+
+Each connection creates a new background process
+ps -ef | grep postgres
+
+If you want to kill a transaction/session?
+
+=> Never use kill -9
+
+pg_cancel_backend 		(will only cancel that statement, your session remains active)
+pg_terminate_backend 	(terminates the connection as well)
+
+any automation??
+
+#idle_in_transaction_session_timeout = 0        # in milliseconds, 0 is disabled
+#idle_session_timeout = 0          		        # in milliseconds, 0 is disabled
+
+top 
+u -> filter by postgres user
+c -> extended information
+Shift+m -> sort by memory
