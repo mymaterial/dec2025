@@ -1,0 +1,125 @@
+postgres: autovacuum launcher
+
+   - clean up dead tuples.
+   - gather statistics.
+   - solves transaction ID wraparound problem. (freeze old txids)
+   ..
+   ..
+	
+	
+autovacuum_work_mem = -1              
+log_autovacuum_min_duration = 10min   
+autovacuum = on                       
+autovacuum_max_workers = 3            
+autovacuum_naptime = 1min  
+       	   
+autovacuum_vacuum_threshold = 50  
+autovacuum_vacuum_scale_factor = 0.2  
+
+threshold -> autovacuum_vacuum_threshold + autovacuum_vacuum_scale_factor*no.of records.
+1000 records.,
+
+		  -> 50 + 0.2*1000  -> 50+200 => 250
+
+autovacuum_analyze_threshold = 50     
+autovacuum_analyze_scale_factor = 0.1 
+
+		  -> 50+0.1*1000 -> 50+100 -> 150
+
+autovacuum_vacuum_insert_threshold = 1000    
+autovacuum_vacuum_insert_scale_factor = 0.2    
+
+		   -> 1000+0.2*1000 -> 1000+200 -> 1200
+		   	   
+autovacuum_freeze_max_age = 200000000 (10% of 2 Billion)
+  
+  
+transaction ID wraparound
+
+	- is a situation where your transaction id percentage reaching 100% (2 billion)
+	- postgres has inbuilt mechanism for it to not reach 100% (vacuum freeze)
+	- freezing begins at 10%
+	
+	Reasons why your postgres ignore 10% limit..
+	
+	- your freezing rate is slower than transaction rate.**
+	- your long running query. (99.99%)
+	- your long running query in replica.
+	- invalid replication slots.*
+	- prepared transactions*
+  
+Query to monitor:
+
+WITH max_age AS (
+    SELECT 2000000000 as max_old_xid
+        , setting AS autovacuum_freeze_max_age
+        FROM pg_catalog.pg_settings
+        WHERE name = 'autovacuum_freeze_max_age' )
+, per_database_stats AS (
+    SELECT datname
+        , m.max_old_xid::int
+        , m.autovacuum_freeze_max_age::int
+        , age(d.datfrozenxid) AS oldest_current_xid
+    FROM pg_catalog.pg_database d
+    JOIN max_age m ON (true)
+    WHERE d.datallowconn )
+SELECT max(oldest_current_xid) AS oldest_current_xid
+    , max(ROUND(100*(oldest_current_xid/max_old_xid::float))) AS percent_towards_wraparound
+    , max(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac
+FROM per_database_stats
+
+ oldest_current_xid | percent_towards_wraparound | percent_towards_emergency_autovac
+--------------------+----------------------------+-----------------------------------
+          122123167 |                         09 |                                99
+	
+  
+autovacuum_vacuum_cost_delay = 2ms                                
+autovacuum_vacuum_cost_limit = 200   (use vacuum_cost_limit)
+
+best practices
+-----------------
+
+1. run manual vacuum every day (during non business hours)
+
+2. still don't stop autovacuum.
+
+3. you can adjust/disable vacuum parameters on any table.   
+ALTER TABLE emp SET ( autovacuum_enabled = false );  
+
+4. make delayed/aggressive vacuum on a table by adjusting table level settings.
+ALTER TABLE emp SET ( autovacuum_vacuum_threshold = 100000 );
+
+5. run vacuum full during maintenance periods.
+
+6. keep an eye on TxID utilization. (not be greater than 50)
+
+Few commands
+--------------
+
+postgres=#
+postgres=# vacuum emp;
+VACUUM
+postgres=# vacuum (freeze) emp;
+VACUUM
+postgres=# analyze emp;
+ANALYZE
+postgres=# vacuum (analyze) emp;
+VACUUM
+postgres=# vacuum (analyze, freeze) emp;
+VACUUM
+postgres=# vacuum full emp;
+VACUUM
+postgres=# analyze;
+ANALYZE
+postgres=# vacuum ;
+VACUUM
+postgres=# vacuum full;
+VACUUM
+postgres=#
+
+
+my_production_critial_maintenance.sql
+vacuum full e;
+vacuum full pgbench_accounts;
+vacuum full e;
+vacuum full e;
