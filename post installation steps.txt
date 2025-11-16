@@ -1,0 +1,107 @@
+post installation steps
+-------------------------
+
+1. set the password for postgres user
+
+    postgres=# \password
+    Enter new password for user "postgres":
+    Enter it again:
+    postgres=#
+
+2. Enable external connectivity
+
+	1. set listen_address
+	set listen_address='*' 							###postgresql.conf
+	
+	2. set pg_hba.conf
+	host    all      all      0.0.0.0/0     md5		###pg_hba.conf
+
+	3. disable firewall/enable port 5432
+	systemctl stop firewalld
+	
+	[or]
+	
+	firewall-cmd --zone=public --add-port=5432/tcp --permanent
+	firewall-cmd --reload
+	
+3. adjust parameters as per pgtune.
+https://pgtune.leopard.in.ua/
+
+max_connections = 500
+shared_buffers = 4GB
+effective_cache_size = 12GB
+maintenance_work_mem = 1GB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+effective_io_concurrency = 200
+work_mem = 8256kB
+huge_pages = off
+min_wal_size = 2GB
+max_wal_size = 8GB
+max_worker_processes = 8
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 8
+max_parallel_maintenance_workers = 4
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+# IPv4 local connections:
+host    all             all             0.0.0.0/0           md5
+
+
+# METHOD can be "trust", "reject", "md5", "password", "scram-sha-256",
+# "gss", "sspi", "ident", "peer", "pam", "oauth", "ldap", "radius" or
+# "cert".  Note that "password" sends passwords in clear text; "md5" or
+# "scram-sha-256" are preferred since they send encrypted passwords.
+
+unable to connect to server:
+connection timeout expired
+
+[postgres@lab01 ~]$ /usr/pgsql-18/bin/psql -h 192.168.128.128
+psql: error: connection to server at "192.168.128.128", port 5432 failed: Connection refused
+        Is the server running on that host and accepting TCP/IP connections?
+[postgres@lab01 ~]$
+
+[postgres@lab01 data]$ /usr/pgsql-18/bin/psql -h 192.168.128.128
+psql: error: connection to server at "192.168.128.128", port 5432 failed: FATAL:  no pg_hba.conf entry for host "192.168.128.128", user "postgres", database "postgres", no encryption
+[postgres@lab01 data]$
+
+[postgres@lab01 data]$ /usr/pgsql-18/bin/psql -U postgres -d a -h 192.168.128.128
+psql: error: connection to server at "192.168.128.128", port 5432 failed: FATAL:  pg_hba.conf rejects connection for host "192.168.128.128", user "postgres", database "a", no encryption
+[postgres@lab01 data]$
+
+[postgres@lab01 data]$ /usr/pgsql-18/bin/psql -U postgres -d c -h 192.168.128.128
+Password for user postgres:
+psql: error: connection to server at "192.168.128.128", port 5432 failed: FATAL:  database "c" does not exist
+[postgres@lab01 data]$
+
+
+
+kfc_user
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# IPv4 local connections:
+host	all				kfc_user		0.0.0.0/0			reject
+host	a				all				0.0.0.0/0			reject
+host    all             all             0.0.0.0/0           md5
