@@ -1,0 +1,67 @@
+/usr/pgsql-18/bin/postgres -D /u01/pgsql/data/
+
+	- connection establishment (listener activity)
+	- take care of other background processes (pmon)
+	- instance recovery (smon)
+
+postgres: walwriter
+
+	- writes information from wal buffers to wal files
+	- on every commit
+	
+postgres: background writer
+
+	- writes information from shared buffers to data files
+	- bgwriter_delay = 200ms (24*7 with a delay of 200ms)
+	- bgwriter_lru_maxpages = 100 (100 blocks at a time)
+	
+postgres: checkpointer
+
+	- ensure your dirty buffers/shared buffers data is written to datafiles
+	- checkpoint_timeout = 5min (crosschecks/occurs for every 5 min)
+
+postgres: logger
+
+	- writes events happening in database to alert log file.
+
+# REPORTING AND LOGGING
+
+# - Where to Log - Where do you want your alert log to go?
+
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'log'  or log_directory = '/u01/mylogs' 
+log_filename = 'postgresql-%a.log'  (or) log_filename = 'postgresql-%d-%m-%y.log' (or) 'alert_mypostgres.log'
+
+# - When to Log - How much information you want?
+
+#log_min_messages = warning             # values in order of decreasing detail:
+                                        #   debug5
+                                        #   debug4
+                                        #   debug3
+                                        #   debug2
+                                        #   debug1
+                                        #   info
+                                        #   notice
+                                        #   warning
+                                        #   error
+                                        #   log
+                                        #   fatal
+                                        #   panic
+
+
+# - What to Log - What kind of information you want?
+
+#log_checkpoints = on
+#log_connections = off
+#log_disconnections = off
+#log_duration = off
+
+postgres: autovacuum launcher
+
+postgres: io worker 0
+postgres: io worker 1
+postgres: io worker 2
+
+
+
