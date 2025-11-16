@@ -1,0 +1,285 @@
+Installation
+-------------
+
+1. source code
+
+	1. download software from internet
+	wget https://ftp.postgresql.org/pub/source/v16.10/postgresql-16.10.tar.gz
+	
+	2. extract it
+	tar -xf postgresql-16.10.tar.gz
+	
+	-- README for installation: /root/postgresql-16.10/INSTALL
+	
+	check for pre-requisites
+	-------------------------
+	1. make 	| make --version 			| GNU Make 4.3 				| dnf install make		##to compile/run C programs
+	2. gcc 	    | rpm -qa | grep gcc 		| gcc-<version>				| dnf install gcc		##is the software for C programs
+	3. readline | rpm -qa | grep readline   | readline, readline-devel 	|  dnf install readline*;
+	4. zlib	    | rpm -qa | grep zlib 		| zlib, zlib-devel 			| dnf install zlib*
+	5. libicu   | rpm -qa | grep libicu     | libicu, libicu-devel		| dnf install libicu-devel
+   6*. bison    | rpm -qa | grep bison      | bison						| dnf install bison
+   7*. flex     | rpm -qa | grep flex       | flex						| dnf install flex
+   8*. perl		| rpm -qa | grep perl       | perl						| dnf install perl
+   
+   * for v17 or higher
+	
+	Installation
+	--------------
+
+    ./configure				#check for pre-requisites
+    make					#compile all C programs
+    make install
+    
+	useradd postgres				#create user for postgres operations
+    passwd postgres					#set password
+	mkdir -p /u01					#decide parent folder
+    chown postgres:postgres /u01	#give appr. permissions
+    su - postgres					#switch to postgres user
+	mkdir -p /u01/pgsql/16			#decide database files location
+    
+	/usr/local/pgsql/bin/initdb -D /u01/pgsql/16					#initialize your first database
+    /usr/local/pgsql/bin/pg_ctl -D /u01/pgsql/16  start	#start
+    /usr/local/pgsql/bin/psql 										#login
+
+2.yum/dnf
+
+useradd postgres		###first thing to do in new machine
+passwd postgres			###first thing to do in new machine
+
+
+dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+dnf -qy module disable postgresql
+dnf install -y postgresql18-server
+
+su - postgres
+
+/usr/pgsql-18/bin/initdb -D /u01/pgsql/18					#initialize your first database
+/usr/pgsql-18/bin/pg_ctl -D /u01/pgsql/18  start	#start
+/usr/pgsql-18/bin/psql 										#login
+
+3. rpm
+
+https://yum.postgresql.org/rpmchart/
+https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-9-x86_64/
+
+
+wget https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-9-x86_64/postgresql17-libs-17.5-2PGDG.rhel9.x86_64.rpm
+wget https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-9-x86_64/postgresql17-17.5-2PGDG.rhel9.x86_64.rpm
+wget https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-9-x86_64/postgresql17-server-17.5-2PGDG.rhel9.x86_64.rpm
+wget https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-9-x86_64/postgresql17-contrib-17.5-2PGDG.rhel9.x86_64.rpm
+
+
+3. postgresql17-server-17.5-2PGDG.rhel9.x86_64.rpm
+1. postgresql17-libs-17.5-2PGDG.rhel9.x86_64.rpm
+2. postgresql17-17.5-2PGDG.rhel9.x86_64.rpm
+4. postgresql17-contrib-17.5-2PGDG.rhel9.x86_64.rpm
+
+rpm -ivh <.rpm>
+e.g..
+rpm -ivh postgresql17-libs-17.5-2PGDG.rhel9.x86_64.rpm
+
+su - postgres
+
+/usr/pgsql-17/bin/initdb -D /u01/pgsql/17					#initialize your first database
+/usr/pgsql-17/bin/pg_ctl -D /u01/pgsql/17 start	#start
+/usr/pgsql-17/bin/psql 										#login
+
+Extensions
+------------
+DETAIL:  Could not open extension control file 
+
+source code
+------------
+cd /root/postgresql-16.10/contrib
+make
+make install
+
+postgres=# create extension pg_buffercache;
+CREATE EXTENSION
+postgres=#
+
+rpm method
+----------
+rpm -ivh postgresql17-contrib-17.5-2PGDG.rhel9.x86_64.rpm
+
+yum/dnf
+-------
+dnf install postgresql18-contrib
+
+Third party extensions
+-----------------------
+postgres=# create extension pg_repack;
+ERROR:  extension "pg_repack" is not available
+HINT:  The extension must first be installed on the system where PostgreSQL is running.
+postgres=#
+
+e.g.,
+
+dnf install pg_repack_18
+
+Multiple versions/Multiple instances
+------------------------------------
+
+[postgres@lab01 ~]$ /usr/pgsql-17/bin/psql
+psql (17.5)													##same version of client/server
+Type "help" for help.
+
+postgres=# \q
+[postgres@lab01 ~]$ /usr/local/pgsql/bin/psql
+psql (16.10, server 17.5)									##lower version of client
+WARNING: psql major version 16, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \q
+[postgres@lab01 ~]$
+[postgres@lab01 ~]$ /usr/pgsql-18/bin/psql
+psql (18.0, server 17.5)									##information
+Type "help" for help.
+
+postgres=#
+
+Multiple instances
+--------------------
+open postgresql.conf -> change the port number
+
+e.g.,
+port=5433
+
+-- Restart
+
+development module install
+---------------------------
+dnf install epel-release
+dnf config-manager --set-enabled crb
+dnf install postgresql18-devel
+
+uninstallation
+----------------
+cd /root/postgresql-16.10/contrib
+make clean
+cd ../
+make clean
+
+rpm/yum/dnf
+------------
+dnf remove postgresql*
+dnf remove pgdg-redhat-repo
+
+Root approach
+--------------
+dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+dnf -qy module disable postgresql
+dnf install -y postgresql18-server
+
+su - postgres
+
+/usr/pgsql-18/bin/initdb -D /u01/pgsql/18					#initialize your first database
+/usr/pgsql-18/bin/pg_ctl -D /u01/pgsql/18 -l logfile start	#start
+/usr/pgsql-18/bin/psql 										#login
+
+[or]
+
+/usr/pgsql-18/bin/postgresql-18-setup initdb
+systemctl enable postgresql-18
+systemctl start postgresql-18
+
+Root approach + Your fav. data directory location
+-------------------------------------------------
+
+cd /lib/systemd/system
+[root@lab01 system]# cat postgresql-18.service | grep PGDATA
+# Note: changing PGDATA will typically require adjusting SELinux
+# Note: do not use a PGDATA pathname containing spaces, or you will
+Environment=PGDATA=/u01/pgsql/data/
+
+systemctl  daemon-reload
+
+
+
+
+[root@lab02 whatever]# rpm -ivh *
+warning: postgresql17-17.5-2PGDG.rhel9.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID 08b40d20: NOKEY
+Verifying...                          ################################# [100%]
+Preparing...                          ################################# [100%]
+Updating / installing...
+   1:postgresql17-libs-17.5-2PGDG.rhel################################# [ 25%]
+   2:postgresql17-17.5-2PGDG.rhel9    ################################# [ 50%]
+   3:postgresql17-server-17.5-2PGDG.rh################################# [ 75%]
+   4:postgresql17-contrib-17.5-2PGDG.r################################# [100%]
+[root@lab02 whatever]#
+[root@lab02 whatever]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/usr/pgsql-18/bin/postgresql-18-setup initdb
+systemctl enable postgresql-18
+systemctl start postgresql-18
+
+
+
+Possible error messages if you don't install pre-requisites
+-----------------------------------------------------------
+
+configure: error: no acceptable C compiler found in $PATH
+configure: error: ICU library not found
+configure: error: bison not found
+configure: error: flex not found
+configure: error: readline library not found
+configure: error: zlib library not found
+
+
+
+[root@lab01 yum.repos.d]# dnf install postgresql18-server
+Last metadata expiration check: 0:00:16 ago on Wednesday 05 November 2025 08:35:12 AM.
+Dependencies resolved.
+=======================================================================================================================================
+ Package                                Architecture              Version                              Repository                 Size
+=======================================================================================================================================
+Installing:
+ postgresql18-server                    x86_64                    18.0-1PGDG.rhel9                     pgdg18                    7.2 M
+Installing dependencies:
+ postgresql18                           x86_64                    18.0-1PGDG.rhel9                     pgdg18                    2.0 M
+ postgresql18-libs                      x86_64                    18.0-1PGDG.rhel9                     pgdg18                    295 k
+
+Transaction Summary
+=======================================================================================================================================
+Install  3 Packages
+
+Total download size: 9.4 M
+Installed size: 43 M
+Is this ok [y/N]:
+
+
+[postgres@lab02 ~]$ psql -h 192.168.128.128
+psql (17.5, server 18.0)
+WARNING: psql major version 17, server major version 18.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=#
+[root@lab02 ~]# su - postgres
+[postgres@lab02 ~]$ psql -h 192.168.128.128
+psql (18.0)
+Type "help" for help.
+
+postgres=#
+
+[root@lab02 ~]# dnf install postgresql18-server
+CentOS Stream 9 - BaseOS                                                                               4.0 kB/s | 4.5 kB     00:01
+CentOS Stream 9 - AppStream                                                                            4.4 kB/s | 4.6 kB     00:01
+CentOS Stream 9 - Extras packages                                                                      4.9 kB/s | 5.2 kB     00:01
+No match for argument: postgresql18-server
