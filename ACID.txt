@@ -1,0 +1,33 @@
+ACID Properties
+------------------
+1. SQL
+
+2. ACID
+
+	Atomicity
+	
+		- irrespective of no.of statements in your transaction, treat it as single.
+		- PG achieves this with the help of transaction blocks (begin/end)
+	begin;
+	update emp set sal=sal-200 where id=1; 
+	update emp set sal=sal+200 where id=2;
+	end;
+	
+	Consistency
+	
+	- Before/After your transaction., your db should be const.
+	
+	Isolation
+	
+	- Reads and Writes should not interfere each other / Reads should see const. past image
+	- MVCC
+	- Oracle achieves it with concept of Undo tablespace
+	
+	
+	Durability
+	
+	- at any cost my data should be safe.
+	- WAL/Transaction logs 
+	- Oracle achieves it with concept of Redo logs
+	
+	
