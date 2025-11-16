@@ -1,0 +1,202 @@
+Installation
+
+	1. source code
+	--------------
+	
+	1. download software from internet
+	wget https://ftp.postgresql.org/pub/source/v17.2/postgresql-17.2.tar.gz
+	
+	2. Extract the software
+	tar -xf postgresql-17.2.tar.gz
+	
+	3. Install pre-requisites
+	dnf install make gcc readline-devel zlib-devel libicu-devel flex bison perl -y
+	
+	4. Install the software
+	
+	cd /root/postgresql-17.2
+   ./configure			#check if all pre-requisites are met
+    make				#compile all your C programs
+    make install		#run your C programs
+	
+	useradd postgres
+	passwd postgres
+	mkdir -p /u01
+	chown -R postgres:postgres /u01
+	
+	su - postgres											#switch to postgres user
+	mkdir -p /u01/pgsql/17									#decide the location for your database files
+	
+	/usr/local/pgsql/bin/initdb -D /u01/pgsql/17			#initialize new database cluster
+	/usr/local/pgsql/bin/pg_ctl -D /u01/pgsql/17 start		#start it
+	/usr/local/pgsql/bin/psql								#login
+
+	2. dnf method
+	--------------
+
+	dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+	dnf -qy module disable postgresql		
+	dnf install -y postgresql16-server  #download software from internet and install it.
+	
+	su - postgres
+	mkdir -p /u01/pgsql/16
+	
+	/usr/pgsql-16/bin/initdb -D /u01/pgsql/16
+	/usr/pgsql-16/bin/pg_ctl -D /u01/pgsql/16 start
+	/usr/pgsql-16/bin/psql
+	
+	3. rpm method
+	--------------
+	
+	 wget https://download.postgresql.org/pub/repos/yum/14/redhat/rhel-9-x86_64/postgresql14-14.15-1PGDG.rhel9.x86_64.rpm
+	 wget https://download.postgresql.org/pub/repos/yum/14/redhat/rhel-9-x86_64/postgresql14-libs-14.15-1PGDG.rhel9.x86_64.rpm
+	 wget https://download.postgresql.org/pub/repos/yum/14/redhat/rhel-9-x86_64/postgresql14-server-14.15-1PGDG.rhel9.x86_64.rpm
+	 wget https://download.postgresql.org/pub/repos/yum/14/redhat/rhel-9-x86_64/postgresql14-contrib-14.15-1PGDG.rhel9.x86_64.rpm
+	
+	
+	3. postgresql14-server-14.15-1PGDG.rhel9.x86_64.rpm	    ##server packages, pg_ctl
+    1. postgresql14-libs-14.15-1PGDG.rhel9.x86_64.rpm		##libraries
+    4. postgresql14-contrib-14.15-1PGDG.rhel9.x86_64.rpm
+    2. postgresql14-14.15-1PGDG.rhel9.x86_64.rpm			##client packages, psql
+	
+	rpm -ivh <rpm_name>
+	
+	su - postgres
+	mkdir -p /u01/pgsql/14
+	
+	/usr/pgsql-14/bin/initdb -D /u01/pgsql/14
+	/usr/pgsql-14/bin/pg_ctl -D /u01/pgsql/14 start
+	/usr/pgsql-14/bin/psql
+	
+How to install extensions (install contrib module)
+--------------------------------------------------
+DETAIL:  Could not open extension control file
+
+source code
+-----------	
+cd /root/postgresql-17.2/contrib
+make
+make install
+	
+yum
+---
+dnf install postgresql16-contrib
+
+rpm 
+---
+rpm -ivh <contrib package>
+	
+
+Install third party extension
+-----------------------------
+dnf install pg_repack_16
+
+rpm -ivh <downloaded rpm>
+
+export PATH=/usr/local/pgsql/bin/:$PATH			####path can be postgres install location
+1. download extension software from internet
+2. make && make install  (see installation instructions in documentation)
+
+	
+Multiple versions
+-------------------
+cd /u01/pgsql/17
+vi postgresql.conf
+port=5433
+	
+bash profile/client vs server software
+---------------------------------------
+	
+v17: /usr/local//pgsql/bin/psql
+v16: /usr/pgsql-16/bin/psql
+	
+[postgres@lab01 162]$ /usr/local//pgsql/bin/psql -p 5432
+psql (17.2, server 16.6)
+Type "help" for help.
+
+postgres=#
+[postgres@lab01 162]$ /usr/pgsql-16/bin/psql -p 5432
+psql (16.6)
+Type "help" for help.
+
+postgres=#
+[postgres@lab01 162]$ /usr/pgsql-14/bin/psql  -p 5432
+psql (14.15, server 16.6)
+WARNING: psql major version 14, server major version 16.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=#
+	
+	
+Uninstallation
+--------------
+
+cd /root/postgresql-17.2/contrib
+make clean
+cd ../
+make clean
+
+rpm/dnf
+-------
+dnf remove postgresql15*
+
+Root approach
+--------------
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/usr/pgsql-16/bin/postgresql-16-setup initdb
+	systemctl enable postgresql-16
+	systemctl start postgresql-16
+	
+
+
+
+-> postgres will come up with 3 databases in database cluster by default.
+-> you use command /usr/local/pgsql/bin/initdb -D /u01/pgsql/17 to initialize or create that database cluster.
+-> you use /usr/local/pgsql/bin/pg_ctl -D /u01/pgsql/17 start to start database cluster., which means you are
+starting all databases inside it.
+
+
+
+Possible error messages if you don't install pre-requisites
+-----------------------------------------------------------
+
+configure: error: no acceptable C compiler found in $PATH
+configure: error: ICU library not found
+configure: error: bison not found
+configure: error: flex not found
+configure: error: readline library not found
+configure: error: zlib library not found
+
+
+
+adduser postgres
+mkdir -p /usr/local/pgsql/data
+chown postgres /usr/local/pgsql/data
+su - postgres
+/usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data -l logfile start
+/usr/local/pgsql/bin/createdb test
+/usr/local/pgsql/bin/psql test
+	
+	
+	
+	2. package method (yum/dnf :online installation)
+	3. rpm method (offline installation)
