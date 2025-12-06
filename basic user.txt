@@ -1,0 +1,80 @@
+[postgres@lab01 ~]$ psql
+psql (17.7)
+Type "help" for help.
+
+postgres=# \du
+                             List of roles
+ Role name |                         Attributes
+-----------+------------------------------------------------------------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS
+
+postgres=# \l
+                                                     List of databases
+   Name    |  Owner   | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules |   Access privileges
+-----------+----------+----------+-----------------+-------------+-------------+--------+-----------+-----------------------
+ postgres  | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           |
+ template0 | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+(3 rows)
+
+postgres=# \dn
+      List of schemas
+  Name  |       Owner
+--------+-------------------
+ public | pg_database_owner
+(1 row)
+
+postgres=#
+
+Databases
+---------
+postgres	default administrative connection database
+template0	unmodifiable empty database
+template1	default template for new databases
+
+database is a group of schemas
+schema is a logical container where you put your tables.
+user is one that controls database/schemas
+
+postgres=# create user kfc_user with password 'kfc_user';
+CREATE ROLE
+postgres=# create database kfc_db with owner kfc_user;
+CREATE DATABASE
+postgres=# \q
+[postgres@lab01 ~]$ psql -U kfc_user -d kfc_db
+psql (17.7)
+Type "help" for help.
+
+kfc_db=> \dn
+      List of schemas
+  Name  |       Owner
+--------+-------------------
+ public | pg_database_owner
+(1 row)
+
+kfc_db=> create schema kfc_user;
+CREATE SCHEMA
+kfc_db=> create table emp(id int,sal int);
+CREATE TABLE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

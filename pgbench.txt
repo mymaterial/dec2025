@@ -1,0 +1,9 @@
+pgbench
+--------
+/usr/pgsql-17/bin/pgbench -i postgres			#create dummy tables 
+/usr/pgsql-17/bin/pgbench -i -s 10 postgres		#create dummy tables of 10x default size
+
+/usr/pgsql-17/bin/pgbench -c 20 -t 100 postgres  #if 20 clients connected doing 100 tx each
+/usr/pgsql-17/bin/pgbench -c 30 -T 100 postgres  #if 30 clients connected doing tx's for 100s
+/usr/pgsql-17/bin/pgbench -c 30 -T 100 -P 3 postgres  #if 30 clients connected doing tx's for 100s & show me progress for every 3s
+pgbench -c 30 -t 1000 -f select.sql				#benchmark custom sql file

@@ -1,0 +1,71 @@
+SWITCHOVER DRILL
+---------------------
+wal_log_hints = on		#mandatory parameter
+
+* STOP APPLICATION (ensure no application is connected, no active transactions in place)
+* STOP ALL YOUR CRON JOBS
+* CHECKPOINT
+* DO A SYNC CHECK (ensure standby is in sync with primary)
+
+1. promote your standby (lab02)
+/usr/pgsql-17/bin/pg_ctl promote -D /u01/pgsql/17
+
+2. Do rewind in primary (lab01)
+/usr/pgsql-17/bin/pg_ctl stop -D /u01/pgsql/17
+/usr/pgsql-17/bin/pg_rewind --target-pgdata=/u01/pgsql/17 --source-server="port=5432 host=192.168.169.141" 
+ 
+3. Set up replication #old primary, lab01
+	
+	1) edit primary_connfinfo and restore_command
+	2) touch standby.signal
+
+pgpool
+------
+-> Ensure PostgreSQL software installed
+
+dnf install pgpool-II
+
+cp  /etc/pgpool-II/pgpool.conf.sample /etc/pgpool-II/pgpool.conf
+Edit the configuration file /etc/pgpool-II/pgpool.conf
+
+listen_addresses = '*'
+pcp_socket_dir = '/var/run/postgresql'
+unix_socket_directories = '/var/run/postgresql'
+allow_clear_text_frontend_auth = on
+pool_passwd = ''
+
+
+# - Backend Connection Settings -
+
+backend_hostname0 = '192.168.110.171'                             
+backend_port0 = 5432
+backend_weight0 = 1
+backend_data_directory0 = '/u01/pgsql/16'
+backend_flag0 = 'ALLOW_TO_FAILOVER'                                 
+backend_application_name0 = 'server0'
+                                 
+backend_hostname1 = '192.168.110.172'
+backend_port1 = 5432
+backend_weight1 = 1
+backend_data_directory1 = '/u01/pgsql/16'
+backend_flag1 = 'ALLOW_TO_FAILOVER'
+backend_application_name1 = 'server1'
+
+sr_check_user = 'postgres'
+sr_check_password = 'postgres'
+sr_check_database = 'jaffa_database_to_check_replication'
+
+health_check_period =1
+
+health_check_user = 'postgres'
+health_check_password = 'postgres'
+health_check_database = 'jaffa_database_to_check_replication'
+
+touch /etc/pgpool-II/pool_passwd
+
+systemctl start pgpool-II
+
+[postgres@v3 ~]$ export PGPASSWORD=postgres
+[postgres@v3 ~]$ psql  -U postgres -p 9999 postgres  -c "show pool_nodes"
+
+touch /etc/pgpool-II/pool_passwd

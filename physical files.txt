@@ -1,0 +1,22 @@
+Physical files
+-----------------
+0000000 nul nul nul nul   X   w   R   $ nul nul nul nul   $ nul can  us
+0000020 nul  sp eot  sp nul nul nul nul   X  us   D nul   8  us   @ nul
+0000040 can  us   > nul nul nul nul nul nul nul nul nul nul nul nul nul
+0000060 nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul
+*
+0017620 nul nul nul nul nul nul nul nul   Q   ? etx nul nul nul nul nul
+0017640 nul nul nul nul nul nul nul nul etx nul soh nul stx  bs can nul
+0017660  si   M   U   M   B   A   I nul   P   ? etx nul nul nul nul nul
+0017700 nul nul nul nul nul nul nul nul stx nul soh nul stx  bs can nul
+0017720 dc1   C   H   E   N   N   A   I   O   ? etx nul nul nul nul nul
+0017740 nul nul nul nul nul nul nul nul soh nul soh nul stx  bs can nul
+0017760 nak   H   Y   D   E   R   A   B   A   D nul nul nul nul nul nul
+0020000
+
+
+[postgres@lab01 5]$ ls -lrt 24653*
+-rw-------. 1 postgres postgres  8192 Nov 25 08:03 24653
+-rw-------. 1 postgres postgres  8192 Nov 25 08:03 24653_vm
+-rw-------. 1 postgres postgres 24576 Nov 25 08:03 24653_fsm
+[postgres@lab01 5]$

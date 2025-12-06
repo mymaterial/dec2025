@@ -1,0 +1,73 @@
+Roles
+------
+
+1. create two role, kfc_dba, kfc_dev
+2. grant select priv on all tables to kfc_dev
+3. grant all priv on all tables to kfc_dba
+4. create 4 users, kfc_dba1, kfc_dba2, kfc_dev1, kfc_dev2
+5. grant kfc_dba role to kfc_dba1, kfc_dba2
+6. grant kfc_dev to kfc_dev1, kfc_dev2
+7. audit their activity.
+
+kfc_db=#
+kfc_db=# create role kfc_dba;
+CREATE ROLE
+kfc_db=# create role kfc_dev;
+CREATE ROLE
+kfc_db=#
+kfc_db=# grant connect on database kfc_db to kfc_dev;
+GRANT
+kfc_db=# grant usage on schema kfc_user to kfc_dev;
+GRANT
+kfc_db=# grant select on all tables in schema  kfc_user to kfc_dev;
+GRANT
+kfc_db=#
+kfc_db=# grant connect on database kfc_db to kfc_dba;
+GRANT
+kfc_db=# grant usage on schema kfc_user to kfc_dba;
+GRANT
+kfc_db=# grant all on all tables in schema  kfc_user to kfc_dba
+kfc_db-# ;
+GRANT
+kfc_db=#
+kfc_db=# create user kfc_dba1 with password 'kfc_dba1';
+CREATE ROLE
+kfc_db=# create user kfc_dba2 with password 'kfc_dba2';
+CREATE ROLE
+kfc_db=# create user kfc_dev1 with password 'kfc_dev1';
+CREATE ROLE
+kfc_db=# create user kfc_dev2 with password 'kfc_dev2';
+CREATE ROLE
+kfc_db=#
+kfc_db=#
+kfc_db=# grant kfc_dba to kfc_dba1;
+GRANT ROLE
+kfc_db=# grant kfc_dba to kfc_dba2;
+GRANT ROLE
+kfc_db=# grant kfc_dev to kfc_dev1;
+GRANT ROLE
+kfc_db=# grant kfc_dev to kfc_dev2;
+GRANT ROLE
+kfc_db=#
+kfc_db=# alter user kfc_dba1 set log_statement='all';
+ALTER ROLE
+kfc_db=# alter user kfc_dba2 set log_statement='all';
+ALTER ROLE
+kfc_db=# alter user kfc_dev1 set log_statement='all';
+ALTER ROLE
+kfc_db=# alter user kfc_dev2 set log_statement='all';
+ALTER ROLE
+kfc_db=#
+kfc_db=# alter user kfc_dba1 set search_path=kfc_user;
+ALTER ROLE
+kfc_db=# alter user kfc_dba2 set search_path=kfc_user;
+ALTER ROLE
+kfc_db=# alter user kfc_dev1 set search_path=kfc_user;
+ALTER ROLE
+kfc_db=# alter user kfc_dev2 set search_path=kfc_user;
+ALTER ROLE
+kfc_db=#
+
+log_line_prefix = '%t [%p]: user=%u,db=%d,app=%a,client=%h '
+
+

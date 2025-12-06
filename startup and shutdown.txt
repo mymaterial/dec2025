@@ -1,0 +1,22 @@
+startup and shutdown modes
+--------------------------
+Shutdown modes are:
+  smart       quit after all clients have disconnected
+  fast        quit directly, with proper shutdown (default)
+  immediate   quit without complete shutdown; will lead to recovery on restart
+  
+shutdown
+----------
+
+1. stop accepting connections/commands
+2. 50-54 transactions are gone.
+3. checkpoint (ensure till 49 written to disk)
+4. shutdown.
+
+-- during the next startup no crash recovery..
+
+shut immediate
+----------------
+1. crash the system
+--
+copy 48,49 to datafile and then open

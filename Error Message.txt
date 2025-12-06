@@ -1,0 +1,76 @@
+
+[postgres@lab01 archivelogs]$ psql
+psql (17.7)
+Type "help" for help.
+
+postgres=# insert into emp values(3,'this is lab01');
+INSERT 0 1
+postgres=# checkpoint;
+CHECKPOINT
+postgres=# insert into emp values(4, 'this is lab01');
+INSERT 0 1
+postgres=# insert into emp values(5, 'this is lab01');
+INSERT 0 1
+postgres=# select * from emp;
+ id |      val
+----+---------------
+  1 | this is lab01
+  2 | this is lab01
+  3 | this is lab01
+  4 | this is lab01
+  5 | this is lab01
+(5 rows)
+
+postgres=# \q
+[postgres@lab01 archivelogs]$ /usr/pgsql-17/bin/pg_ctl stop -D /u01/pgsql/17
+waiting for server to shut down.... done
+server stopped
+[postgres@lab01 archivelogs]$ cd
+[postgres@lab01 ~]$ /usr/pgsql-17/bin/pg_rewind --target-pgdata=/u01/pgsql/17 --source-server="port=5432 host=192.168.169.141"
+pg_rewind: servers diverged at WAL location 0/60002B8 on timeline 1
+pg_rewind: error: could not open file "/u01/pgsql/17/pg_wal/000000010000000000000006": No such file or directory
+pg_rewind: error: could not find previous WAL record at 0/60002B8
+[postgres@lab01 ~]$ cp /u01/archivelogs/000000010000000000000006 /u01/pgsql/17/pg_wal/
+[postgres@lab01 ~]$ /usr/pgsql-17/bin/pg_rewind --target-pgdata=/u01/pgsql/17 --source-server="port=5432 host=192.168.169.141"
+pg_rewind: servers diverged at WAL location 0/60002B8 on timeline 1
+pg_rewind: rewinding from last common checkpoint at 0/6000208 on timeline 1
+pg_rewind: Done!
+[postgres@lab01 ~]$ cd /u01/pgsql/17
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,150 @@
+dnf install epel-release
+dnf config-manager --set-enabled crb
+
+dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+dnf -qy module disable postgresql
+dnf install -y postgresql17-server postgresql17-contrib postgresql17-devel 
+
+192.168.169.140 lab01
+192.168.169.141 lab02
+192.168.169.128	lab03
+
+passwordless connectivity
+----------------------------
+
+ssh-keygen -t rsa
+ssh postgres@192.168.169.141 mkdir -p .ssh
+cat .ssh/id_rsa.pub | ssh postgres@192.168.169.141 'cat >> .ssh/authorized_keys'
+ssh postgres@192.168.169.141 "chmod 700 .ssh; chmod 640 .ssh/authorized_keys"
+ssh postgres@192.168.169.141
+
+ssh-keygen -t rsa
+ssh postgres@192.168.169.140 mkdir -p .ssh
+cat .ssh/id_rsa.pub | ssh postgres@192.168.169.140 'cat >> .ssh/authorized_keys'
+ssh postgres@192.168.169.140 "chmod 700 .ssh; chmod 640 .ssh/authorized_keys"
+ssh postgres@192.168.169.140
+
+-- initialize new database cluster
+-- perform post installation steps. (enable external connectivity)
+
+enable archivelogging
+----------------------
+
+mkdir -p /u01/archivelogs
+archive_mode = on
+archive_command = 'cp %p /u01/archivelogs/%f'   
+
+Add replication entry in pg_hba to take backups from remote machine
+host    replication             all             0.0.0.0/0         md5	##pg_hba.conf
+
+
+1. backup your cluster in the same machine and restore.
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/backups --checkpoint=fast -P
+pg_ctl start -D /u01/backups
+
+2. take the backup in remote machine and restore.
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140
+
+3. take the backup in remote machine and restore + apply archivelogging generated after the backup
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140
+touch recovery.signal
+restore_command = 'scp 192.168.169.140:/u01/archivelogs/%f %p' 
+
+4. take the backup in remote machine and restore + apply archivelogging generated after the backup till my fav point only
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140
+touch recovery.signal
+restore_command = 'scp 192.168.169.140:/u01/archivelogs/%f %p' 
+recovery_target_lsn = '0/2A7ADE90'
+
+-- once you check your fav.point
+
+select pg_wal_replay_resume();
+
+5. take the backup in remote machine and restore + apply archivelogging generated after the backup and wait for next archive to come
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140
+touch standby.signal
+restore_command = 'scp 192.168.169.140:/u01/archivelogs/%f %p' 
+
+6. take the backup in remote machine and restore + apply archivelogging generated after the backup and dont wait for next archive, instead pick it from primary wal
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140
+touch standby.signal
+restore_command = 'scp 192.168.169.140:/u01/archivelogs/%f %p' 
+primary_conninfo = 'host=192.168.169.140 user=postgres password=postgres'       
+
+7. apply in standby first and then primary (sync streaming replication)
+
+synchronous_standby_names = '*'
+primary_conninfo = 'host=192.168.169.140 user=postgres password=postgres application_name=random'                       
+
+8. cascading replication
+primary_conninfo = 'host=<standby_ip_address> user=postgres password=postgres'                       
+
+
+#recovery_target_name = ''      # the named restore point to which recovery will proceed
+                                # (change requires restart)
+#recovery_target_time = ''      # the time stamp up to which recovery will proceed
+                                # (change requires restart)
+#recovery_target_xid = ''       # the transaction ID up to which recovery will proceed
+                                # (change requires restart)
+#recovery_target_lsn = '0/2A7ADE90'       # the WAL LSN up to which recovery will proceed
+                                # (change requires restart)
+
+max_wal_senders=3 -> I can setup two standby's (extra max_wal_sender is for backup)
+
+9. use -R
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140 -R
+
+10. replication slots
+
+/usr/pgsql-17/bin/pg_basebackup -D /u01/pgsql/17 --checkpoint=fast -P -h 192.168.169.140 -R -C -S slot_1
+
+
+
+SELECT 
+    pg_wal_lsn_diff(
+        pg_current_wal_lsn(),
+        replay_lsn
+    ) AS gap_bytes,
+    pg_wal_lsn_diff(
+        pg_current_wal_lsn(),
+        replay_lsn
+    ) / (16 * 1024 * 1024) AS gap_wal_files
+FROM (
+    SELECT pg_last_wal_replay_lsn() AS replay_lsn
+    FROM dblink('host=STANDBY_IP dbname=postgres user=rep_user password=xxx',
+                'SELECT pg_last_wal_replay_lsn()')
+         AS t(replay_lsn pg_lsn)
+) AS sub;
+
+
+ select pid, state, sent_lsn,replay_lsn , pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) as "replica lag" from pg_stat_replication;
+ 
+ 
+Hot standby conflicts:
+https://www.postgresql.org/docs/current/hot-standby.html#HOT-STANDBY-CONFLICT
+
+postgres=# select *, pg_sleep(100) from emp;
+ERROR:  canceling statement due to conflict with recovery
+DETAIL:  User query might have needed to see row versions that must be removed.
+postgres=#
+
+postgres=# select *, pg_sleep(100) from emp;
+
+
+
+
+FATAL:  terminating connection due to conflict with recovery
+DETAIL:  User was connected to a database that must be dropped.
+HINT:  In a moment you should be able to reconnect to the database and repeat your command.
+server closed the connection unexpectedly
+        This probably means the server terminated abnormally
+        before or while processing the request.
+The connection to the server was lost. Attempting reset: Failed.
+The connection to the server was lost. Attempting reset: Failed.
+!?>
+

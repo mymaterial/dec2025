@@ -1,0 +1,13 @@
+kfc_db=>
+kfc_db=> grant connect on database kfc_db to kfc_read;
+GRANT
+kfc_db=> grant usage on schema kfc_user to kfc_read;
+GRANT
+kfc_db=> grant select on emp to kfc_read;
+GRANT
+kfc_db=> grant select on all tables in schema kfc_user to kfc_read;
+GRANT
+kfc_db=> alter default privileges in schema kfc_user grant  select on tables to kfc_read;
+ALTER DEFAULT PRIVILEGES
+kfc_db=>
+kfc_db=>
