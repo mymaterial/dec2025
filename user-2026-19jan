@@ -1,0 +1,222 @@
+user administration
+-------------------
+
+[postgres@lab01 ~]$ psql
+psql (18.1)
+Type "help" for help.
+
+postgres=# \du
+                             List of roles
+ Role name |                         Attributes
+-----------+------------------------------------------------------------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS
+
+postgres=# \l
+                                                     List of databases
+   Name    |  Owner   | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules |   Access privileges
+-----------+----------+----------+-----------------+-------------+-------------+--------+-----------+-----------------------
+ postgres  | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           |
+ template0 | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | en_IN.UTF-8 | en_IN.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+(3 rows)
+
+postgres=# \dn
+      List of schemas
+  Name  |       Owner
+--------+-------------------
+ public | pg_database_owner
+(1 row)
+
+postgres=#
+
+
+postgres   : default administrative connection database
+template0  : unmodifiable empty database
+template1  : default template for new databases
+
+### copy/clone template1 to a
+postgres=# create database a;
+CREATE DATABASE
+
+### copy/clone template0 to b
+postgres=# create database b template template0;
+CREATE DATABASE
+
+### copy/clone database a to database c
+postgres=# create database c template a;
+CREATE DATABASE
+
+user : is one who controls your database/schema
+schema : is one that holds your tables
+databases: is the logical container for multiple schemas
+
+postgres=# create user airtel_user with password 'airtel_user';
+CREATE ROLE
+postgres=#
+postgres=# create database airtel with owner airtel_user;
+CREATE DATABASE
+postgres=# \q
+[postgres@lab01 ~]$ psql -U airtel_user -d airtel
+psql (18.1)
+Type "help" for help.
+
+airtel=> \dn
+      List of schemas
+  Name  |       Owner
+--------+-------------------
+ public | pg_database_owner
+(1 row)
+
+airtel=> create schema airtel_user;
+CREATE SCHEMA
+airtel=> create table emp(id int,sal int);
+CREATE TABLE
+airtel=> insert into emp values(1,100);
+INSERT 0 1
+airtel=> \dt+
+                                          List of tables
+   Schema    | Name | Type  |    Owner    | Persistence | Access method |    Size    | Description
+-------------+------+-------+-------------+-------------+---------------+------------+-------------
+ airtel_user | emp  | table | airtel_user | permanent   | heap          | 8192 bytes |
+(1 row)
+
+Search path: Determines where the table should go
+---------------------------------------------------
+
+jio=> show search_path;
+   search_path
+-----------------
+ "$user", public
+(1 row)
+
+jio=>
+
+
+
+[postgres@lab01 ~]$ psql
+psql (18.1)
+Type "help" for help.
+
+postgres=# create user t_user with password 't_user';
+CREATE ROLE
+postgres=# create database target with owner t_user;
+CREATE DATABASE
+postgres=# \q
+[postgres@lab01 ~]$ psql -U t_user -d target;
+psql (18.1)
+Type "help" for help.
+
+target=> create schema t_nyc;
+CREATE SCHEMA
+target=> \dn
+      List of schemas
+  Name  |       Owner
+--------+-------------------
+ public | pg_database_owner
+ t_nyc  | t_user
+(2 rows)
+
+target=>
+target=> create schema t_anyother;
+CREATE SCHEMA
+target=> \dn
+        List of schemas
+    Name    |       Owner
+------------+-------------------
+ public     | pg_database_owner
+ t_anyother | t_user
+ t_nyc      | t_user
+(3 rows)
+
+target=>
+target=> \c - postgres
+You are now connected to database "target" as user "postgres".
+target=# create user t_another with password t_another;
+ERROR:  syntax error at or near "t_another"
+LINE 1: create user t_another with password t_another;
+                                            ^
+target=# create user t_another with password 't_another';
+CREATE ROLE
+target=# grant connect on database target to t_another;
+GRANT
+target=#
+target=#
+target=#
+target=# alter schema t_anyother owner to t_another;
+ALTER SCHEMA
+target=#
+target=#
+target=# \dn
+        List of schemas
+    Name    |       Owner
+------------+-------------------
+ public     | pg_database_owner
+ t_anyother | t_another
+ t_nyc      | t_user
+(3 rows)
+
+target=#
+target=# \q
+[postgres@lab01 ~]$ psql -U  t_anyother -d target
+psql: error: connection to server on socket "/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "t_anyother" does not exist
+[postgres@lab01 ~]$ psql -U  t_aother -d target
+psql: error: connection to server on socket "/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "t_aother" does not exist
+[postgres@lab01 ~]$ psql -U  t_another -d target
+psql (18.1)
+Type "help" for help.
+
+target=>
+target=>
+target=> create table users(id int,sal int);
+ERROR:  permission denied for schema public
+LINE 1: create table users(id int,sal int);
+                     ^
+target=> create table t_anyother.users(id int,sal varchar(100));
+CREATE TABLE
+target=> insert into t_anyother.users values(1,'this is t_anyother schema');
+INSERT 0 1
+target=> \q
+[postgres@lab01 ~]$ psql -U t_user -d target
+psql (18.1)
+Type "help" for help.
+
+target=> create table t_nyc.users (id int,sal varchar(100));
+CREATE TABLE
+target=> insert into  t_nyc.users values(1,'this is t_nyc schema');
+INSERT 0 1
+target=>
+target=>
+target=>
+target=>
+target=>
+target=> select * from t_nyc.users;
+ id |         sal
+----+----------------------
+  1 | this is t_nyc schema
+(1 row)
+
+target=> select * from t_anyother.users;
+ERROR:  permission denied for schema t_anyother
+LINE 1: select * from t_anyother.users;
+                      ^
+target=> \
+invalid command \
+Try \? for help.
+target=> \q
+[postgres@lab01 ~]$ psql -U t_another -d target
+psql (18.1)
+Type "help" for help.
+
+target=> select * from t_anyother.users;
+ id |            sal
+----+---------------------------
+  1 | this is t_anyother schema
+(1 row)
+
+target=> select * from t_nyc.users;
+ERROR:  permission denied for schema t_nyc
+LINE 1: select * from t_nyc.users;
+                      ^
+target=>
