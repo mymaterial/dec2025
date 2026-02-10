@@ -1,0 +1,168 @@
+8:00 AM -> take backup
+
+10:00 AM -> upgrade planned
+10:05 AM -> link method upgrade finished successfully
+10:01 AM -> upgrade failed... you need to restore 8:00 AM Backup.
+
+logical replication
+-------------------
+- unline physical replciation,you can customize replication objects
+- physical, it is entire intance
+- logical, it can be table, group of tables, schemas...databases...
+create publication my_publication for all table emp, dept;
+
+
+pg_upgrade
+
+	- minor
+		
+		16.x -> 16.y
+		
+			- stop your instance
+			
+			- install new binaries
+			dnf install postgresql16-server postgresql16-contrib
+			
+			- start your instance.
+			
+	- major
+
+		16.x -> 17.y
+		
+		- pg_upgrade
+		
+		I. copy method
+				
+		1. Install software (v17)
+		2. Initialize your database (v17)
+		3. Stop both v16 and v17
+		4. Run pg_upgrade from v17 binaries for pre-requisite check
+		
+		/usr/pgsql-17/bin/pg_upgrade -d /u01/pgsql/16 -D /u01/pgsql/17 -b /usr/pgsql-16/bin/ -B /usr/pgsql-17/bin/ -c
+		
+		5. Run pg_upgrade
+		
+		/usr/pgsql-17/bin/pg_upgrade -d /u01/pgsql/16 -D /u01/pgsql/17 -b /usr/pgsql-16/bin/ -B /usr/pgsql-17/bin/
+		
+		- It copies /u01/pgsql/16 to /u01/pgsql/17 
+		
+		6. start and check.
+		
+		II. link method
+		
+		/usr/pgsql-17/bin/pg_upgrade -d /u01/pgsql/16 -D /u01/pgsql/17 -b /usr/pgsql-16/bin/ -B /usr/pgsql-17/bin/ -k
+
+		Best practices & advantages & disadvantages
+		---------------------------------------------
+		If copy method is used
+		
+			1. Need not take backup.
+			2. Time consuming (downtime=copy speed of disk)
+			3. Need equal amount of disk space.
+			4. after upgrade is finished, you dont need v16 folder
+			
+		If link method is used
+		
+	        0*: Take the backup
+			
+			1. Not time consuing (finished in few minutes)
+			2. space is not required.
+			3. since its a cut paste/link you need v16 folder as well.
+			4. If something goes wrong in upgradation, both v16 and v17 folders are gone.
+		
+		1. take a backup of your configuration files.
+		2. after upgrade, edit v17 configuration file with v16 details.
+		3. if you have standby, you might end up reconfiguring it.
+		4. ensure you take explain plans of important queries backup.
+		
+	- pg_dump
+		
+		- pg_dump old version
+		- psql new version
+		
+		/usr/pgsql-17/bin/pg_dump -U postgres -d b  | /usr/pgsql-17/bin/psql -U postgres  -d b -p 5433
+		
+		- logical replication
+		
+		=> near zero downtime upgrade
+		
+		3. logical replication (near zero)
+	    
+	    1. change wal_level=logical (n1)
+	    
+	    2. initialize and start cluster in standby(n2)
+	    
+	    3. take metadata backup
+	    /usr/pgsql-15/bin/pg_dump -U postgres -d demo -s > metaonly.sql
+	    
+	    4. import metadata in (n2) after creating required database
+	    psql -f metaonly.sql
+	    
+	    5. set up publication (n1)
+	    demo=# create publication my_publication for all tables;
+	    CREATE PUBLICATION
+	    demo=#
+	    
+	    6. set up subsription (n2)
+	    CREATE SUBSCRIPTION my_subscription CONNECTION 'host=192.168.44.129 port=5432 dbname=demo' PUBLICATION my_publication;
+	    
+		==== After your logical replica is in sync with primary
+			
+			1. stop application
+			2. check sync again
+			3. stop v17 and change port to 5432
+			3. give v17 connection string to application
+			4. start application.
+		
+	
+Assuming you have table with out primary key
+
+1. try to create primary key 
+
+If your table has duplicates
+
+I.	1. delete duplicates
+	2. create primary key
+	
+II. 1) Omit the table for logical replication
+	2) Once replication is completed, stop both v16 & v17 for application
+	3) Take pg_dump of v16 on that table and psql on v17
+	4) Start application with v17 DB
+	
+If you have streaming replication
+
+	1. If you follow copy method, no other go, rebuilt
+	2. If you follow link method, You have some steps to perform to upgrade replica.
+	
+rsync --archive --delete --hard-links --size-only --no-inc-recursive /u01/pgsql/16 /u01/pgsql/17 /u01/pgsql
+
+
+cd /u01/pgsql (in source)
+rsync --archive --delete --hard-links --size-only --no-inc-recursive /u01/pgsql/16 /u01/pgsql/17 /u01/pgsql
+
+rsync --archive --delete --hard-links --size-only --no-inc-recursive /opt/PostgreSQL/12 \
+      /opt/PostgreSQL/17 standby.example.com:/opt/PostgreSQL
+
+Let's assume
+
+primary
+
+/u01/pgsql/16
+/u01/pgsql/17
+
+replica
+/u01/pgsql/16
+
+1. create  /u01/pgsql/17 folder.
+2. go to primary, go to /u01/pgsql location (one location ahead of primary & standby data directories)
+3. pwd
+<location>
+rsync --archive --delete --hard-links --size-only --no-inc-recursive /u01/pgsql/16 /u01/pgsql/17 <location>
+
+
+
+
+
+
+create publication p1 for table t1;
+create publication p2 for table t2;;
