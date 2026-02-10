@@ -1,0 +1,30 @@
+pgbouncer [machine 3]
+---------
+yum install -y pgbouncer  
+
+SELECT CONCAT('"',pg_shadow.usename, '" "', passwd, '"') FROM pg_shadow;
+
+firewall-cmd --zone=public --permanent --add-port 6432/tcp
+firewall-cmd --reload
+
+
+[root@test03 ~]# cat /etc/pgbouncer/userlist.txt
+"postgres" "SCRAM-SHA-256$4096:Mpf4SdTShgarSF9S1RetiQ==$eG2NUANe4ym8o4zPb2X7uQSHAMf3BRHtgm+N6u10bhY=:nwzz8umqcmfhevLJpzF+egkH+s4yvYpMzTmi2vtsKsI="
+
+[root@test03 ~]#
+vi /etc/pgbouncer/pgbouncer.ini
+
+----------------
+[databases]
+postgres = host=192.168.110.171 port=5432 dbname=postgres
+
+listen_addr = *					#edit
+listen_port = 6432				#edit
+
+auth_type = trust  				#edit
+auth_file = /etc/pgbouncer/userlist.txt		#edit
+
+systemctl start pgbouncer
+systemctl status pgbouncer
+
+/usr/pgsql-15/bin/pgbench -c 10 -t 10 -p 6432 postgres -h 192.168.110.171
